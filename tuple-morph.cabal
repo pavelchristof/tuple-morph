@@ -1,0 +1,17 @@
+name:                tuple-morph
+version:             0.1.0.0
+synopsis:            Morph between isomorphic tuples. Convert tuples from an to heterogenous lists.
+-- description:         
+license:             MIT
+license-file:        LICENSE
+author:              Paweł Nowak
+maintainer:          Paweł Nowak <pawel834@gmail.com>
+copyright:           Paweł Nowak 2014
+category:            Data
+build-type:          Simple
+cabal-version:       >=1.10
+
+library
+  exposed-modules:     Data.Tuple.Morph
+  build-depends:       base <5, HList
+  default-language:    Haskell2010
