@@ -1,7 +1,10 @@
 name:                tuple-morph
 version:             0.1.0.0
-synopsis:            Morph between isomorphic tuples. Convert tuples from an to heterogenous lists.
--- description:         
+synopsis:            Morph between tuples with the same "flattened" representation
+description:         Morph between tuples with the same "flattened" representation. Convert
+                     tuples from an to heterogenous lists.
+                     .
+                     See "Data.Tuple.Morph".
 license:             MIT
 license-file:        LICENSE
 author:              Paweł Nowak
