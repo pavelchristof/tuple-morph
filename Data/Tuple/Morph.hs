@@ -28,7 +28,8 @@ module Data.Tuple.Morph (
     Rep,
     HFoldable(..),
     HUnfoldable(..),
-    HParser(..)
+    HParser(..),
+    MonoidIndexedMonad(..)
     ) where
 
 import Data.HList.HList (HList(..))
@@ -70,33 +71,37 @@ class HFoldable t where
 
 -- | A function that parses some value @val@ with representation @rep@
 -- from a heterogenous list and returns the parsed value and leftover.
-newtype HParser (rep :: [*]) (val :: *) = HParser {
+newtype HParser (rep :: [*]) val = HParser {
     -- | Run the parser.
     runHParser :: forall (leftover :: [*]). 
                   HList (rep ++ leftover) -> (val, HList leftover) 
 }
 
--- HParser is a monad indexed over a monoid. We can use a typeclass for
--- that... but it doesn't work in GHC 7.8. Maybe some day.
+-- | An indexed monad on a monoid.
+class MonoidIndexedMonad (m :: k -> * -> *) where
+    type Empty  :: k
+    type Append :: k -> k -> k
+    returnMI :: a -> m Empty a
+    bindMI :: m x a -> (a -> m y b) -> m (Append x y) b
 
-type Empty = ('[] :: [*])
-type Append = (++)
+instance MonoidIndexedMonad HParser where
+    type Empty = ('[] :: [*])
+    type Append = (++)
 
-returnMI :: a -> HParser Empty a
-returnMI a = HParser $ \r -> (a, r)
+    returnMI a = HParser $ \r -> (a, r)
 
-bindMI :: forall (x :: [*]) (a :: *) (y :: [*]) (b :: *).
-          HParser x a -> (a -> HParser y b) -> HParser (Append x y) b
-bindMI m f = HParser $  g
-  where
-    g :: forall (leftover :: [*]).
-         HList ((Append x y) ++ leftover) -> (b, HList leftover)
-    g r0 = case appendAssoc (Proxy :: Proxy x)
-                            (Proxy :: Proxy y)
-                            (Proxy :: Proxy leftover) of
-              Refl -> let (a, r1) = runHParser m (r0)
-                          (b, r2) = runHParser (f a) r1
-                      in (b, r2)
+    bindMI :: forall (x :: [*]) a (y :: [*]) b.
+              HParser x a -> (a -> HParser y b) -> HParser (Append x y) b
+    bindMI m f = HParser $  g
+      where
+        g :: forall (leftover :: [*]). 
+             HList ((Append x y) ++ leftover) -> (b, HList leftover)
+        g r0 = case appendAssoc (Proxy :: Proxy x) 
+                                (Proxy :: Proxy y)
+                                (Proxy :: Proxy leftover) of
+                  Refl -> let (a, r1) = runHParser m r0
+                              (b, r2) = runHParser (f a) r1
+                          in (b, r2)
 
 -- | Types that can be built from a heterogenous list.
 class HUnfoldable t where
