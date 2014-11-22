@@ -21,8 +21,8 @@ Stability   :  experimental
 
 Allows you to flatten, unflatten and morph tuples of matching types.
 
-Note: by design units are not stored in the HList representation. For example 
-      @(Int, (), Char)@ is the same as @(Int, Char)@.
+Note: by design units are ignored. For example @(Int, (), Char)@ is 
+      the same as @(Int, Char)@.
 -}
 module Data.Tuple.Morph (
     -- * Morphing tuples.
