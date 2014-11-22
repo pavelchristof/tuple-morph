@@ -17,7 +17,7 @@ Copyright   :  (c) Paweł Nowak
 License     :  MIT
 
 Maintainer  :  Paweł Nowak <pawel834@gmail.com>
-Stability   :  experimental
+Stability   :  provisional
 
 Allows you to flatten, unflatten and morph tuples of matching types.
 
