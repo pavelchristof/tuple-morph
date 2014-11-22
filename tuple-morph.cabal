@@ -1,6 +1,6 @@
 name:                tuple-morph
 version:             0.1.0.0
-synopsis:            Morph between tuples with the same "flattened" representation
+synopsis:            Morph between tuples, or convert them from and to HLists.
 description:         Morph between tuples with the same "flattened" representation. Convert
                      tuples from and to heterogenous lists.
                      .
