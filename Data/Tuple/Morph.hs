@@ -21,12 +21,12 @@ Stability   :  experimental
 
 Allows you to flatten, unflatten and morph tuples of matching types.
 
-Note: by design units are ignored. For example @(Int, (), Char)@ is 
-      the same as @(Int, Char)@.
+Note: by design units are ignored. For example @(Int, (), Char)@ is the same as @(Int, Char)@.
 -}
 module Data.Tuple.Morph (
     -- * Morphing tuples.
     morph,
+    sizeLimit,
 
     -- * Converting between tuples and HLists.
     Rep,
@@ -46,11 +46,11 @@ import Data.Tuple.Morph.Append
 import Data.Tuple.Morph.TH
 
 -- | Recurisvely break down a tuple type, representing it as a type list.
-$(mkRep 13)
+$(mkRep sizeLimit)
 
 -- | Morph a tuple to some isomorphic tuple with the same order of types.
 --
--- Works with arbitrary nested tuples, each tuple can have size up to 13.
+-- Works with arbitrary nested tuples, each tuple can have size up to 'sizeLimit'.
 --
 -- >>> morph ("a", ("b", "c")) :: (String, String, String)
 -- ("a","b","c")
@@ -116,17 +116,9 @@ class HUnfoldable t where
     -- | Builds a structure from a heterogenous list and yields the leftovers.
     hListParser :: HParser (Rep t) t
 
-instance (HFoldable a, HFoldable b, HFoldable c, HFoldable d, HFoldable e) => HFoldable (a, b, c, d, e) where
-    toHList (a, b, c, d, e) = toHList a ++@ toHList b ++@ toHList c ++@ toHList d ++@ toHList e
+-- HFoldable instances.
 
-instance (HFoldable a, HFoldable b, HFoldable c, HFoldable d) => HFoldable (a, b, c, d) where
-    toHList (a, b, c, d) = toHList a ++@ toHList b ++@ toHList c ++@ toHList d
-
-instance (HFoldable a, HFoldable b, HFoldable c) => HFoldable (a, b, c) where
-    toHList (a, b, c) = toHList a ++@ toHList b ++@ toHList c
-
-instance (HFoldable a, HFoldable b) => HFoldable (a, b) where
-    toHList (a, b) = toHList a ++@ toHList b
+$(mapM (mkHFoldableInst ''HFoldable) [sizeLimit, sizeLimit-1 .. 2])
 
 instance HFoldable () where
     toHList () = HNil
@@ -134,18 +126,20 @@ instance HFoldable () where
 instance (Rep a ~ '[a]) => HFoldable a where
     toHList a = HCons a HNil
 
+-- HUnfoldable instances.
 
 instance (HUnfoldable a, HUnfoldable b, HUnfoldable c, HUnfoldable d) => HUnfoldable (a, b, c, d) where
-    hListParser = case appendRightId (Proxy :: Proxy (Rep d)) of
-                  Refl -> hListParser `bindMI` (\(a, b, c) ->
-                          hListParser `bindMI` (\d ->
+    hListParser = case appendRightId (Proxy :: Proxy (Rep b ++ Rep c ++ Rep d)) of
+                  Refl -> hListParser `bindMI` (\a ->
+                          hListParser `bindMI` (\(b, c, d) ->
                           returnMI (a, b, c, d)))
 
 instance (HUnfoldable a, HUnfoldable b, HUnfoldable c) => HUnfoldable (a, b, c) where
     hListParser = case appendRightId (Proxy :: Proxy (Rep c)) of
-                  Refl -> hListParser `bindMI` (\(a, b) ->
+                  Refl -> hListParser `bindMI` (\a ->
+                          hListParser `bindMI` (\b ->
                           hListParser `bindMI` (\c ->
-                          returnMI (a, b, c)))
+                          returnMI (a, b, c))))
 
 instance (HUnfoldable a, HUnfoldable b) => HUnfoldable (a, b) where
     hListParser = case appendRightId (Proxy :: Proxy (Rep b)) of 

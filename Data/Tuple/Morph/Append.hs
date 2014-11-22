@@ -20,6 +20,8 @@ import Data.Proxy
 import Data.Type.Equality
 import Unsafe.Coerce
 
+infixr 5 ++, ++@
+
 -- | Appends two type lists.
 type family (++) (a :: [k]) (b :: [k]) :: [k] where
     '[]       ++ b = b
