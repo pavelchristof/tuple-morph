@@ -13,11 +13,14 @@ Stability   :  experimental
 module Data.Tuple.Morph.TH (
     sizeLimit,
     mkRep,
-    mkHFoldableInst
+    mkHFoldableInst,
+    mkHUnfoldableInst
     ) where
 
 import Control.Monad
+import Data.Proxy
 import Data.Tuple.Morph.Append
+import Data.Type.Equality
 import Language.Haskell.TH
 
 -- | Generates names starting with letters of the alphabet, then
@@ -61,23 +64,56 @@ mkRep n = fmap (:[])
             rep = foldr1 (\x y -> AppT (AppT append x) y) reps
         return $ TySynEqn [tuple] rep
 
--- | Creates a HFoldable instance for @k@ element tuples.
-mkHFoldableInst :: Name -> Int -> Q Dec
-mkHFoldableInst className k = do
+mkInst :: Name -> Int -> ([Name] -> [Dec]) -> Dec
+mkInst className k decs =
     let names = mkNames k
-        -- types a, b, c, ...
-        vars = map VarT names
-        -- type (a, b, c, ...)
-        tuple = tupleFrom vars
+        tvars = map VarT names
+    in InstanceD [ClassP className [tvar] | tvar <- tvars]
+                 (AppT (ConT className) (tupleFrom tvars))
+                 (decs names)
+
+-- | Creates a HFoldable instance for @k@ element tuples.
+mkHFoldableInst :: Int -> Q Dec
+mkHFoldableInst k = return $ mkInst (mkName "HFoldable") k $ \names ->
+    let toHListName = mkName "toHList"
         -- pattern (a, b, c, ...)
         tupleP = TupP $ map VarP names
-        toHListName = mkName "toHList"
         -- toHList a, toHList b, toHList c, ...
         hlists = map (\n -> AppE (VarE toHListName) (VarE n)) names
         -- toHList a ++@ toHList b ++@ toHList c ++@ ...
         body = NormalB $ foldr1 (\x y -> AppE (AppE (VarE '(++@)) x) y) hlists
         toHList = FunD toHListName [Clause [tupleP] body []]
-    return $ InstanceD
-             [ClassP className [var] | var <- vars]
-             (AppT (ConT className) tuple)
-             [toHList]
+    in [toHList]
+
+-- | Creates a HUnfoldable instance for @k@ element tuples.
+mkHUnfoldableInst :: Int -> Q Dec
+mkHUnfoldableInst k = return $ mkInst (mkName "HUnfoldable") k $ \names ->
+    let hListParserName = mkName "hListParser"
+        repName = mkName "Rep"
+        bindMIName = mkName "bindMI"
+        returnMIName = mkName "returnMI"
+
+        -- Proxy :: Proxy (Rep z)
+        proxy = SigE (ConE 'Proxy)
+                     (AppT (ConT ''Proxy)
+                           (AppT (ConT repName)
+                                 (VarT $ last names)))
+
+        -- appendRightId proxy
+        theorem = AppE (VarE 'appendRightId) proxy
+
+        -- bindMI hListParser (\a ->
+        -- bindMI hListParser (\b ->
+        -- ...
+        -- returnMI (a, b, c, ...))...)
+        bindE n e = AppE (AppE (VarE bindMIName)
+                               (VarE hListParserName))
+                         (LamE [VarP n] e)
+        returnE = (AppE (VarE returnMIName) (TupE (map VarE names)))
+
+        matchBody = NormalB $ foldr bindE returnE names
+
+        -- case theorem of Refl -> ???
+        body = NormalB $ CaseE theorem [Match (ConP 'Refl []) matchBody []]
+        hListParser = FunD hListParserName [Clause [] body []]
+    in [hListParser]

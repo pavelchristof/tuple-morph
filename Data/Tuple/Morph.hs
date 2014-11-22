@@ -118,37 +118,20 @@ class HUnfoldable t where
 
 -- HFoldable instances.
 
-$(mapM (mkHFoldableInst ''HFoldable) [sizeLimit, sizeLimit-1 .. 2])
-
 instance HFoldable () where
     toHList () = HNil
 
 instance (Rep a ~ '[a]) => HFoldable a where
     toHList a = HCons a HNil
 
+$(mapM mkHFoldableInst [2 .. sizeLimit])
+
 -- HUnfoldable instances.
 
-instance (HUnfoldable a, HUnfoldable b, HUnfoldable c, HUnfoldable d) => HUnfoldable (a, b, c, d) where
-    hListParser = case appendRightId (Proxy :: Proxy (Rep b ++ Rep c ++ Rep d)) of
-                  Refl -> hListParser `bindMI` (\a ->
-                          hListParser `bindMI` (\(b, c, d) ->
-                          returnMI (a, b, c, d)))
-
-instance (HUnfoldable a, HUnfoldable b, HUnfoldable c) => HUnfoldable (a, b, c) where
-    hListParser = case appendRightId (Proxy :: Proxy (Rep c)) of
-                  Refl -> hListParser `bindMI` (\a ->
-                          hListParser `bindMI` (\b ->
-                          hListParser `bindMI` (\c ->
-                          returnMI (a, b, c))))
-
-instance (HUnfoldable a, HUnfoldable b) => HUnfoldable (a, b) where
-    hListParser = case appendRightId (Proxy :: Proxy (Rep b)) of 
-                  Refl -> hListParser `bindMI` (\a ->
-                          hListParser `bindMI` (\b ->
-                          returnMI (a, b)))
+instance HUnfoldable () where
+    hListParser = HParser $ \r -> ((), r)
 
 instance (Rep a ~ '[a]) => HUnfoldable a where
     hListParser = HParser $ \(HCons a r) -> (a, r)
 
-instance HUnfoldable () where
-    hListParser = HParser $ \r -> ((), r)
+$(mapM mkHUnfoldableInst [2 .. sizeLimit])
