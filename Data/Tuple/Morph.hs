@@ -79,14 +79,14 @@ newtype HParser (rep :: [*]) val = HParser {
 
 -- | An indexed monad on a monoid.
 class MonoidIndexedMonad (m :: k -> * -> *) where
-    type Empty  :: k
-    type Append :: k -> k -> k
+    type Empty :: k
+    type Append (x :: k) (y :: k) :: k
     returnMI :: a -> m Empty a
     bindMI :: m x a -> (a -> m y b) -> m (Append x y) b
 
 instance MonoidIndexedMonad HParser where
     type Empty = ('[] :: [*])
-    type Append = (++)
+    type Append x y = (x ++ y :: [*])
 
     returnMI a = HParser $ \r -> (a, r)
 
