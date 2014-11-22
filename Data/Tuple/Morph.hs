@@ -111,7 +111,7 @@ class HUnfoldable t where
     hListParser :: HParser (Rep t) t
 
 
-type family (++) (a :: [*]) (b :: [*]) :: [*] where
+type family (++) (a :: [k]) (b :: [k]) :: [k] where
     '[]       ++ b = b
     (a ': as) ++ b = a ': (as ++ b)
 
