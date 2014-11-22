@@ -18,3 +18,4 @@ library
   exposed-modules:     Data.Tuple.Morph
   build-depends:       base <5, HList
   default-language:    Haskell2010
+  ghc-options:         -fprint-explicit-kinds
