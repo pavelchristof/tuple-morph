@@ -60,6 +60,9 @@ $(mkRep sizeLimit)
 -- 
 -- >>> morph ("a", (), (5 :: Int, (), "c")) :: ((), (String, Int), String)
 -- ((),("a",5),"c")
+--
+-- >>> morph (((("a", "b"), "c"), "d"), "e") :: ((String, String), (String, (String, String)))
+-- (("a","b"),("c",("d","e")))
 morph :: forall a b. (HFoldable a, HUnfoldable b, Rep a ~ Rep b) => a -> b
 morph = case appendRightId (Proxy :: Proxy (Rep a)) of
     Refl -> fromHList . toHList
