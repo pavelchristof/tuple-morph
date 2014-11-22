@@ -24,12 +24,23 @@ Note: by design units are not stored in the HList representation. For example
       @(Int, (), Char)@ is the same as @(Int, Char)@.
 -}
 module Data.Tuple.Morph (
+    -- * Morphing tuples.
     morph,
+
+    -- * Converting between tuples and HLists.
     Rep,
     HFoldable(..),
     HUnfoldable(..),
+
+    -- * HList parser.
     HParser(..),
-    MonoidIndexedMonad(..)
+    MonoidIndexedMonad(..),
+
+    -- * Appending type lists and HLists.
+    type (++),
+    appendAssoc,
+    appendRightId,
+    (++@)
     ) where
 
 import Data.HList.HList (HList(..))
@@ -38,6 +49,8 @@ import Data.Type.Equality
 import Unsafe.Coerce
 
 -- | Morph a tuple to some isomorphic tuple with the same order of types.
+--
+-- Works with arbitrary nested tuples, each tuple can have size up to 13.
 --
 -- >>> morph ("a", ("b", "c")) :: (String, String, String)
 -- ("a","b","c")
@@ -70,7 +83,7 @@ class HFoldable t where
     toHList :: t -> HList (Rep t)
 
 -- | A function that parses some value @val@ with representation @rep@
--- from a heterogenous list and returns the parsed value and leftover.
+-- from a heterogenous list and returns the parsed value and leftovers.
 newtype HParser (rep :: [*]) val = HParser {
     -- | Run the parser.
     runHParser :: forall (leftover :: [*]). 
@@ -115,18 +128,21 @@ class HUnfoldable t where
     -- | Builds a structure from a heterogenous list and yields the leftovers.
     hListParser :: HParser (Rep t) t
 
-
+-- | Appends two type lists.
 type family (++) (a :: [k]) (b :: [k]) :: [k] where
     '[]       ++ b = b
     (a ': as) ++ b = a ': (as ++ b)
 
+-- | Proof (by unsafeCoerce) that appending is associative.
 appendAssoc :: Proxy a -> Proxy b -> Proxy c 
             -> ((a ++ b) ++ c) :~: (a ++ (b ++ c))
 appendAssoc _ _ _ = unsafeCoerce Refl
 
+-- | Proof (by unsafeCoerce) that '[] is a right identity of (++).
 appendRightId :: Proxy a -> (a ++ '[]) :~: a
 appendRightId _ = unsafeCoerce Refl
 
+-- | Appends two HLists.
 (++@) :: HList a -> HList b -> HList (a ++ b)
 HNil         ++@ ys = ys
 (HCons x xs) ++@ ys = HCons x (xs ++@ ys)
