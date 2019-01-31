@@ -40,8 +40,9 @@ sizeLimit = 13
 -- | Creates the "Rep" type family.
 mkRep :: Int -> Q [Dec]
 mkRep n = fmap (:[])
-        $ closedTypeFamilyKindD (mkName "Rep")
-              [(PlainTV (mkName "tuple"))] (AppT ListT StarT)
+        $ closedTypeFamilyD (mkName "Rep")
+              [(PlainTV (mkName "tuple"))] (KindSig (AppT ListT StarT))
+              Nothing
         -- Try to match tuples from biggest to smallest.
         $ map mkEqn [n, n-1 .. 2] ++ map return
         -- Match the unit after all tuples but before the base case.
@@ -68,7 +69,20 @@ mkInst :: Name -> Int -> ([Name] -> [Dec]) -> Dec
 mkInst className k decs =
     let names = mkNames k
         tvars = map VarT names
-    in InstanceD [ClassP className [tvar] | tvar <- tvars]
+        rep = ConT $ mkName "Rep"
+        tvars' = AppT rep <$> tvars
+
+        -- Add an Appendable instance to the context for every append we do
+        (appendables, _) = foldr
+          (\a (instances, tailTy) ->
+            ( ConT ''Appendable `AppT` a `AppT` tailTy : instances
+            , ConT ''(++) `AppT` a `AppT` tailTy
+            ))
+          ([], last tvars')
+          (init tvars')
+
+    in InstanceD Nothing
+                 ([AppT (ConT className) tvar | tvar <- tvars] ++ appendables)
                  (AppT (ConT className) (tupleFrom tvars))
                  (decs names)
 

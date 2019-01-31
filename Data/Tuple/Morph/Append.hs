@@ -1,5 +1,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
 {- |
@@ -38,7 +40,11 @@ appendAssoc _ _ _ = unsafeCoerce Refl
 appendRightId :: Proxy a -> (a ++ '[]) :~: a
 appendRightId _ = unsafeCoerce Refl
 
--- | Appends two HLists.
-(++@) :: HList a -> HList b -> HList (a ++ b)
-HNil         ++@ ys = ys
-(HCons x xs) ++@ ys = HCons x (xs ++@ ys)
+class Appendable as bs where
+  (++@) :: HList as -> HList bs -> HList (as ++ bs)
+
+instance Appendable '[] bs where
+  HNil ++@ bs = bs
+
+instance Appendable as bs => Appendable (a ': as) bs where
+  HCons a as ++@ bs = HCons a (as ++@ bs)
