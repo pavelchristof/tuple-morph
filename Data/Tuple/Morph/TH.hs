@@ -81,7 +81,7 @@ mkInst className k decs =
           ([], last tvars')
           (init tvars')
 
-    in InstanceD Nothing
+    in InstanceD (Just Overlapping)
                  ([AppT (ConT className) tvar | tvar <- tvars] ++ appendables)
                  (AppT (ConT className) (tupleFrom tvars))
                  (decs names)

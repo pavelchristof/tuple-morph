@@ -119,10 +119,10 @@ class HUnfoldable t where
 
 -- HFoldable instances.
 
-instance HFoldable () where
+instance {-# OVERLAPPING #-} HFoldable () where
     toHList () = HNil
 
-instance (Rep a ~ '[a]) => HFoldable a where
+instance {-# OVERLAPPING #-} (Rep a ~ '[a]) => HFoldable a where
     toHList a = HCons a HNil
 
 $(mapM mkHFoldableInst [2 .. sizeLimit])
@@ -132,7 +132,10 @@ $(mapM mkHFoldableInst [2 .. sizeLimit])
 instance {-# OVERLAPPING #-} HUnfoldable () where
     hListParser = HParser $ \r -> ((), r)
 
-instance {-# OVERLAPPABLE #-} (Rep a ~ '[a]) => HUnfoldable a where
+instance {-# OVERLAPPING #-} (Rep a ~ '[a]) => HUnfoldable a where
     hListParser = HParser $ \(HCons a r) -> (a, r)
 
 $(mapM mkHUnfoldableInst [2 .. sizeLimit])
+
+_test :: (Int, (), ((), Char)) -> (Int, Char)
+_test = morph
