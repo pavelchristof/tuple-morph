@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances #-}
 {- |
 Module      :  Data.Tuple.Morph.Append
 Description :  Appending type lists.
@@ -39,6 +40,11 @@ appendRightId :: Proxy a -> (a ++ '[]) :~: a
 appendRightId _ = unsafeCoerce Refl
 
 -- | Appends two HLists.
-(++@) :: HList a -> HList b -> HList (a ++ b)
-HNil         ++@ ys = ys
-(HCons x xs) ++@ ys = HCons x (xs ++@ ys)
+class HAppend a where
+  (++@) :: HList a -> HList b -> HList (a ++ b)
+
+instance HAppend '[] where
+  HNil ++@ ys = ys
+
+instance HAppend as => HAppend (a ': as) where
+  (HCons x xs) ++@ ys = HCons x (xs ++@ ys)
